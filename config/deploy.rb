@@ -92,3 +92,11 @@ namespace :deploy do
   end
   after :publishing, :restart
 end
+
+desc "Backup database"
+task :backup do
+  on roles(:app) do
+    execute "/etc/cron.daily/backup-db-redmine_production"
+    download! "backups/redmine_production.sql", "redmine_production.sql"
+  end
+end
