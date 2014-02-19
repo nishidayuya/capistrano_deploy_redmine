@@ -100,3 +100,75 @@ task :backup do
     download! "backups/redmine_production.sql", "redmine_production.sql"
   end
 end
+
+namespace :restore do
+  namespace :check do
+    desc "Check local sql file"
+    task :file do
+      on roles(:app) do
+        local_path = "redmine_production.sql"
+        if !Pathname(local_path).exist?
+          error "`#{local_path}' is not found."
+          exit 1
+        end
+      end
+    end
+
+    desc "Check remote database"
+    task :no_relations do
+      on roles(:app) do
+        within release_path do
+          with rails_env: fetch(:rails_env), lc_all: "C" do
+            remote_path = release_path + "tmp" + "d"
+            upload!(StringIO.new("\\d\n"), remote_path)
+            begin
+              s = capture :rails, "db production < #{remote_path}"
+              if s != "No relations found."
+                error "Remote database is not empty."
+                exit 1
+              end
+            ensure
+              execute :rm, remote_path.to_s
+            end
+          end
+        end
+      end
+    end
+  end
+
+  task check: %w[check:file check:no_relations]
+end
+
+desc "Restore database"
+task restore: 'restore:check' do
+  local_path = Pathname("redmine_production.sql")
+  on roles(:app) do
+    within release_path do
+      with rails_env: fetch(:rails_env) do
+        remote_path = release_path + "tmp" + local_path.basename
+        upload!(local_path.to_s, remote_path.to_s)
+        execute :rails, "db production < #{remote_path}"
+        execute :rm, remote_path.to_s
+      end
+    end
+  end
+end
+
+desc "Drop database"
+task :drop do
+  set :need_run, ask("Do you want database to drop? Type `yes' or other", "")
+  set :really_need_run, ask("Really? Type `yes' or other", "")
+  on roles(:app) do
+    within release_path do
+      with rails_env: fetch(:rails_env) do
+        info "CAUTION CAUTION CAUTION CAUTION CAUTION CAUTION CAUTION CAUTION"
+        if (key = fetch(:need_run)) != "yes" ||
+            (key = fetch(:really_need_run)) != "yes"
+          info "You typed #{key.inspect}. Now canceling."
+          exit
+        end
+        execute :rake, "db:drop"
+      end
+    end
+  end
+end
