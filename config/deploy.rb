@@ -7,7 +7,7 @@ set :repo_url, "https://github.com/redmine/redmine.git"
 
 # Default branch is :master
 # ask :branch, proc { `git rev-parse --abbrev-ref HEAD`.chomp }
-set :branch, "2.4.2"
+set :branch, "2.6.0"
 
 # Default deploy_to directory is /var/www/my_app
 # set :deploy_to, '/var/www/my_app'
