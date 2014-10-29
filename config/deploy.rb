@@ -48,6 +48,7 @@ set :linked_dirs, %w{
 
 # Default value for keep_releases is 5
 # set :keep_releases, 5
+set :keep_releases, 20
 
 set :rbenv_type, :system
 set :rbenv_ruby, "2.0.0-p353"
