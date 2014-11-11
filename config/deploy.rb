@@ -55,6 +55,14 @@ set :rbenv_ruby, "2.0.0-p353"
 set :rails_env, "production"
 set :assets_roles, []
 
+set :plugins, [
+  [
+    "redmine_importer",
+    "https://github.com/zh/redmine_importer.git",
+    "cec3bcc7a2a26d84bcdf0cd30c123f5a758b3e89",
+  ],
+]
+
 files_path = Pathname("files")
 
 namespace :deploy do
@@ -92,6 +100,36 @@ namespace :deploy do
     end
   end
   before :check, :upload
+
+  desc "Updating Redmine plugins"
+  task :updating_redmine_plugins => [:set_rails_env] do
+    on roles(:app) do
+      within release_path do
+        with rails_env: fetch(:rails_env), lc_all: "C" do
+          fetch(:plugins).each do |name, uri, reference|
+            plugins_path = Pathname("plugins/#{name}")
+            execute :git, :clone, uri, plugins_path
+            within plugins_path do
+              execute :git, :checkout, "--quiet", reference
+            end
+          end
+        end
+      end
+    end
+  end
+  after :"deploy:updating", :"deploy:updating_redmine_plugins"
+
+  desc "Migrate Redmine plugins"
+  task :migrate_redmine_plugins => [:set_rails_env] do
+    on primary fetch(:migration_role) do
+      within release_path do
+        with rails_env: fetch(:rails_env), lc_all: "C" do
+          execute :rake, "redmine:plugins:migrate"
+        end
+      end
+    end
+  end
+  after :"deploy:migrate", :"deploy:migrate_redmine_plugins"
 
   desc "Restart application"
   task :restart do
