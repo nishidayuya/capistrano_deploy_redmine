@@ -61,6 +61,11 @@ set :plugins, [
     "https://github.com/zh/redmine_importer.git",
     "cec3bcc7a2a26d84bcdf0cd30c123f5a758b3e89",
   ],
+  [
+    "redmine_text_format_converter",
+    "https://github.com/nishidayuya/redmine_text_format_converter",
+    "a0ac14e052ba8c1a6f9d6e9f88c6763cbed8977a",
+  ],
 ]
 
 files_path = Pathname("files")
